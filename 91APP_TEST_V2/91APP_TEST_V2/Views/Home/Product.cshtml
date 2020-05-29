@@ -1,0 +1,62 @@
+﻿@{
+    ViewBag.Title = "Product";
+    Layout = null;
+    var item = ViewBag.Item;
+    var account = "";
+    if (Session["account"] == null || string.IsNullOrWhiteSpace(Session["account"].ToString()))
+    {
+        Response.Redirect("~/Home/Login");
+    }
+    else
+    {
+        account = Session["account"].ToString();
+    }
+}
+
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+
+    <!-- Styles -->
+    <link href="/Content/bootstrap.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Contents -->
+    <div>
+        <center><h1>Product Detail</h1></center>
+    </div>
+    <div class="container" id="Product">
+        <center>
+            <div class="form-group col-xs-12">
+                <table class="table table-striped">
+                   
+                    <tr>
+                        <th>Order id</th>
+                        <td>@item.id</td>
+                    </tr>
+                    <tr>
+                        <th>Order item</th>
+                        <td>@item.name</td>
+                    </tr>
+                    <tr>
+                        <th>Price</th>
+                        <td>@item.price</td>
+                    </tr>
+                    <tr>
+                        <th>Cost</th>
+                        <td>@item.cost</td>
+                    </tr>
+                    <tr>
+                        <th>Status</th>
+                        <td>@item.status</td>
+                    </tr>
+                </table>
+            </div>
+        </center>
+    </div>
+    <script src="/Scripts/jquery-1.10.2.js"></script>
+    <script src="/Scripts/bootstrap.js"></script>
+</body>
+</html>
+

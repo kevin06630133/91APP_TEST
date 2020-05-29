@@ -1,0 +1,108 @@
+﻿@{
+    ViewBag.Title = "OrderList";
+    Layout = null;
+    var list = ViewBag.List;
+    var account = "";
+
+    if (Session["account"] == null || string.IsNullOrWhiteSpace(Session["account"].ToString()))
+    {
+        Response.Redirect("~/Home/Login");
+    }
+    else
+    {
+        account = Session["account"].ToString();
+    }
+}
+
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width" />
+    <title>Index</title>
+
+    <!-- Styles -->
+    <link href="/Content/bootstrap.css" rel="stylesheet">
+</head>
+<body>
+    <!-- Contents -->
+    <div>
+        <center>
+            <h3>@String.Format("歡迎 User : {0}", account)</h3>
+        </center>
+    </div>
+    <div class="container">
+        <h4>Order List</h4>
+        <center>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th></th>
+                        <th>Order id</th>
+                        <th>Order item</th>
+                        <th>Price</th>
+                        <th>Cost</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @for (int i = 0; i < list.Count; i++)
+                    {
+                        <tr>
+                            <td>
+                                @if (list[i].status == "To be shipped")
+                                {
+                                    <input name="select[]" value=@list[i].id type="checkbox" , disabled="disabled">
+                                }
+                                else
+                                {
+                                    <input name="select[]" value=@list[i].id type="checkbox">
+                                }
+                            </td>
+                            <td>@list[i].id</td>
+                            <td><a href=@String.Format("/Home/Product/{0}", list[i].id) target="_blank" rel="noopener noreferrer">@list[i].name</td>
+                            <td>@list[i].price</td>
+                            <td>@list[i].cost</td>
+                            <td>@list[i].status</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+            <br />
+            <input id="confirm" type="button" value="Confirm" class="btn btn-primary" />
+            <input id="logout" type="button" onclick="register()" value="Sign out" class="btn btn-primary" />
+        </center>
+    </div>
+    <!-- Scripts -->
+    <script src="/Scripts/jquery-1.10.2.js"></script>
+    <script src="/Scripts/bootstrap.js"></script>
+    <script>
+    function register() {
+        location.href = "/Home/Logout";
+    }
+    </script>
+    <script>
+        $(document).ready(function () {
+            $("#confirm").click(function () {
+                var checklist = [];
+                $.each($("input[name='select[]']:checked"), function () {
+                    checklist.push($(this).attr('value'));
+                });
+                $.ajax({
+                    type: "Post",
+                    url: "../Home/Shipping",
+                    data: JSON.stringify({ "checklist": checklist.join(",")}),
+                    contentType: "application/json; charset=utf-8",
+                    dataType: "text",
+                    async: false,
+                    success: function (return_check) {
+                        $.each(checklist, function (index, val) {
+                            $("tbody > tr:nth-child(" + val + ") > td:nth-child(6)").text("To be shipped");
+                            $("tbody > tr:nth-child(" + val + ") input").attr("disabled", "disabled");
+                            $("tbody > tr:nth-child(" + val + ") input").prop("checked", false);
+                        });
+                    }
+                });
+            });
+        });
+    </script>
+</body>
+</html>
