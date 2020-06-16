@@ -2,15 +2,7 @@
     ViewBag.Title = "Product";
     Layout = null;
     var item = ViewBag.Item;
-    var account = "";
-    if (Session["account"] == null || string.IsNullOrWhiteSpace(Session["account"].ToString()))
-    {
-        Response.Redirect("~/Home/Login");
-    }
-    else
-    {
-        account = Session["account"].ToString();
-    }
+    var account = Session["account"].ToString();
 }
 
 <html lang="en">

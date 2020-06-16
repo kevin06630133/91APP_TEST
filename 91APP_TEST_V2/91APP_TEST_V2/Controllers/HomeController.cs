@@ -4,17 +4,17 @@ using System.Linq;
 using System.Web;
 using System.Web.Mvc;
 using _91APP_TEST_V2.Models;
+using _91APP_TEST_V2.Filter;
 using MySql.Data.MySqlClient;
 using System.Data;
-
+ 
 namespace _91APP_TEST_V2.Controllers
 {
     public class HomeController : Controller
     {
-        MyDataBase db = new MyDataBase();
-
         public bool CheckUserData(string account, string password)
-        {
+        {   
+            /*
             try
             {
                 string sql = "SELECT 1 FROM user WHERE account = @account AND password = @password;";
@@ -40,13 +40,32 @@ namespace _91APP_TEST_V2.Controllers
             {
                 db.Disconnect();
             }
+             * */
+            string sql = "SELECT 1 FROM user WHERE account = @account AND password = @password;";
+            using (MyDataBase db = new MyDataBase())
+            {
+                MySqlCommand cmd = db.MySqlCommand(sql);
+                cmd.Parameters.Add("@account", MySqlDbType.VarChar).Value = account;
+                cmd.Parameters.Add("@password", MySqlDbType.VarChar).Value = password;
+
+                db.Connect();
+
+                using (MySqlDataReader dr = cmd.ExecuteReader())
+                {
+                    if (dr.Read())
+                        return true;
+                }
+                return false;
+            }
         }
 
+        [AllowAnonymous]
         public ActionResult Login()
         {
             return View();
         }
 
+        [AllowAnonymous]
         [HttpPost]
         public ActionResult Login(FormCollection post)
         {
@@ -75,35 +94,36 @@ namespace _91APP_TEST_V2.Controllers
 
         public ActionResult OrderList()
         {
-            
-            string sql = String.Format(@" select * from order_list where order_list.account = '{0}'", Session["account"]);
-
-            MySqlCommand cmd = db.MySqlCommand(sql);
 
             List<Item> list = new List<Item>();
 
-            db.Connect();
-
-            using (MySqlDataReader dr = cmd.ExecuteReader())
+            using (MyDataBase db = new MyDataBase())
             {
-                while (dr.Read())
+                string sql = String.Format(@" select order_list.id,item,price,product.cost,account,status from order_list, product where order_list.account = '{0}' and order_list.item = product.name", Session["account"]);
+
+                MySqlCommand cmd = db.MySqlCommand(sql);
+
+                db.Connect();
+
+                using (MySqlDataReader dr = cmd.ExecuteReader())
                 {
-                    Item item = new Item();
-                    item.id = dr["id"].ToString();
-                    item.name = dr["item"].ToString();
-                    item.price = Convert.ToInt16(dr["price"]);
-                    item.cost = Convert.ToInt16(dr["cost"]);
-                    item.status = dr["status"].ToString();
-                    list.Add(item);
+                    while (dr.Read())
+                    {
+                        Item item = new Item();
+                        item.id = dr["id"].ToString();
+                        item.name = dr["item"].ToString();
+                        item.price = Convert.ToInt16(dr["price"]);
+                        item.cost = Convert.ToInt16(dr["cost"]);
+                        item.status = dr["status"].ToString();
+                        list.Add(item);
+                    }
                 }
             }
-
-            db.Disconnect();
 
             ViewBag.List = list;
             return View();
         }
-
+        
         [HttpPost]
         public ContentResult Shipping(String checklist)
         {
@@ -112,23 +132,32 @@ namespace _91APP_TEST_V2.Controllers
                 return Content("Success");
             }
             string[] select = System.Text.RegularExpressions.Regex.Split(checklist, ",");
-            
-            string sql = "";
-            MySqlCommand cmd = null;
-            db.Connect();
-            for (int i = 0; i < select.Length; i++)
+
+            using (MyDataBase db = new MyDataBase())
             {
-                sql = String.Format(@" INSERT shippingorder (orderid, status) VALUES({0}, 'New')", select[i]);
-                cmd = db.MySqlCommand(sql);
-                cmd.ExecuteNonQuery();
+                string sql = "";
+                MySqlCommand cmd = null;
+                db.Connect();
+                try
+                {
+                    db.trans = db.conn.BeginTransaction();
+                    for (int i = 0; i < select.Length; i++)
+                    {
+                        sql = String.Format(@" INSERT shippingorder (orderid, status) VALUES({0}, 'New')", select[i]);
+                        cmd = db.MySqlCommand(sql);
+                        cmd.ExecuteNonQuery();
+                    }
+                    sql = @" UPDATE order_list SET status = 'To be shipped' WHERE id IN (" + String.Join(",", select) + ");";
+                    cmd = db.MySqlCommand(sql);
+                    cmd.ExecuteNonQuery();
+                    db.trans.Commit();
+                }
+                catch(MySqlException ex)
+                {
+                    db.Rollback();
+                    return Content("Fail");
+                }
             }
-            sql = @" UPDATE order_list SET status = 'To be shipped' WHERE id IN (" + String.Join(",", select) + ");";
-
-            cmd = db.MySqlCommand(sql);
-
-            int n = cmd.ExecuteNonQuery();
-
-            db.Disconnect();
 
             return Content("Success");
         }
@@ -139,28 +168,29 @@ namespace _91APP_TEST_V2.Controllers
             {
                 return Redirect("OrderList");
             }
-            
-            string sql = @" SELECT * FROM order_list WHERE id = " + id;
-
-            MySqlCommand cmd = db.MySqlCommand(sql);
 
             Item item = new Item();
 
-            db.Connect();
-
-            using (MySqlDataReader dr = cmd.ExecuteReader())
+            using (MyDataBase db = new MyDataBase())
             {
-                while (dr.Read())
+                string sql = @" SELECT * FROM order_list WHERE id = " + id;
+
+                MySqlCommand cmd = db.MySqlCommand(sql);
+
+                db.Connect();
+
+                using (MySqlDataReader dr = cmd.ExecuteReader())
                 {
-                    item.id = dr["id"].ToString();
-                    item.name = dr["item"].ToString();
-                    item.price = Convert.ToInt16(dr["price"]);
-                    item.cost = Convert.ToInt16(dr["cost"]);
-                    item.status = dr["status"].ToString();
+                    while (dr.Read())
+                    {
+                        item.id = dr["id"].ToString();
+                        item.name = dr["item"].ToString();
+                        item.price = Convert.ToInt16(dr["price"]);
+                        item.cost = Convert.ToInt16(dr["cost"]);
+                        item.status = dr["status"].ToString();
+                    }
                 }
             }
-
-            db.Disconnect();
 
             ViewBag.Item = item;
             return View();

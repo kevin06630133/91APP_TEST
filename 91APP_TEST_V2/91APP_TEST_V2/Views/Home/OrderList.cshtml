@@ -2,16 +2,7 @@
     ViewBag.Title = "OrderList";
     Layout = null;
     var list = ViewBag.List;
-    var account = "";
-
-    if (Session["account"] == null || string.IsNullOrWhiteSpace(Session["account"].ToString()))
-    {
-        Response.Redirect("~/Home/Login");
-    }
-    else
-    {
-        account = Session["account"].ToString();
-    }
+    var account = Session["account"].ToString(); ;
 }
 
 <html lang="en">
@@ -58,7 +49,7 @@
                                 }
                             </td>
                             <td>@list[i].id</td>
-                            <td><a href=@String.Format("/Home/Product/{0}", list[i].id) target="_blank" rel="noopener noreferrer">@list[i].name</td>
+                            <td><a href=@String.Format("/Home/Product/{0}", list[i].id) target="_blank" rel="noopener noreferrer"/>@list[i].name</td>
                             <td>@list[i].price</td>
                             <td>@list[i].cost</td>
                             <td>@list[i].status</td>
@@ -94,11 +85,16 @@
                     dataType: "text",
                     async: false,
                     success: function (return_check) {
-                        $.each(checklist, function (index, val) {
-                            $("tbody > tr:nth-child(" + val + ") > td:nth-child(6)").text("To be shipped");
-                            $("tbody > tr:nth-child(" + val + ") input").attr("disabled", "disabled");
-                            $("tbody > tr:nth-child(" + val + ") input").prop("checked", false);
-                        });
+                        if (return_check == "Success") {
+                            $.each(checklist, function (index, val) {
+                                $("tbody > tr:nth-child(" + val + ") > td:nth-child(6)").text("To be shipped");
+                                $("tbody > tr:nth-child(" + val + ") input").attr("disabled", "disabled");
+                                $("tbody > tr:nth-child(" + val + ") input").prop("checked", false);
+                            });
+                        }
+                        else {
+                            alert("Database connect error!");
+                        }
                     }
                 });
             });
